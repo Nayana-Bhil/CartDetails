@@ -1,138 +1,99 @@
-(function () {
-  const { Component, Store, mount } = owl;
-  const { xml } = owl.tags;
-  const { whenReady } = owl.utils;
-  const { useRef, useDispatch, useState, useStore } = owl.hooks;
 
-  // -------------------------------------------------------------------------
-  // Store
-  // -------------------------------------------------------------------------
-  const actions = {
-    addTask({ state }, title) {
-      title = title.trim();
-      if (title) {
-        const task = {
-          id: state.nextId++,
-          title: title,
-          isCompleted: false,
-        };
-        state.tasks.push(task);
-      }
-    },
-    toggleTask({ state }, id) {
-      const task = state.tasks.find((t) => t.id === id);
-      task.isCompleted = !task.isCompleted;
-    },
-    deleteTask({ state }, id) {
-      const index = state.tasks.findIndex((t) => t.id === id);
-      state.tasks.splice(index, 1);
-    },
-  };
+const { Component, Store, mount } = owl;
+const { xml } = owl.tags;
+const { whenReady } = owl.utils;
+const { useRef, useState } = owl.hooks;
 
-  const initialState = {
-    nextId: 1,
-    tasks: [],
-  };
+const APP_TEMPLATE = xml /* xml */`
+   <div class="task-list">
+   		<div class="heading">Shopping App
+			    <div class="shopping-app">
+				    	<input placeholder="Search product.." t-on-keyup="searchFunction"/>
+						 <t t-foreach="products" t-as="product" t-key="product.id">
+				            <div class="task">
+				                <span><t t-esc="product.product_name"/></span>
+				   				<span>Rs. <t t-esc="product.product_price"/></span>
+				   				<button type="button" t-att-id="product.id" t-on-click="addTask">Add to cart</button>
+				            </div> 
+				        </t>
+				</div>
+		</div>
+	    <div class="cartstore">
+			<span><t t-set="total" t-value="0"/></span>
+				<t t-foreach="tasks" t-as="task" t-key="task.id">
+					<span><t t-set="maintotal" t-value="total + products[task.p_id-1].product_price"/></span>
+					<span><t t-esc="products[task.p_id-1].product_name"/></span>
+					<span class="delete" t-att-id="task.p_id" t-on-click="deleteTask">🗑</span>
+			    </t>
+			<span><t t-esc="maintotal"/></span>
+		</div>
+	</div>`;
+	// Owl Components
+	class App extends Component {
+	    static template = APP_TEMPLATE;
 
-  // -------------------------------------------------------------------------
-  // Task Component
-  // -------------------------------------------------------------------------
-  const TASK_TEMPLATE = xml/* xml */ `
-    <div class="task" t-att-class="props.task.isCompleted ? 'done' : ''">
-        <input type="checkbox" t-att-checked="props.task.isCompleted"
-            t-att-id="props.task.id"
-            t-on-click="dispatch('toggleTask', props.task.id)"/>
-        <label t-att-for="props.task.id"><t t-esc="props.task.title"/></label>
-        <span class="delete" t-on-click="dispatch('deleteTask', props.task.id)">🗑</span>
-    </div>`;
+	    addTask(ev) {
+	        const p_id = ev.target.id;
+	            if (p_id && (!this.tasks.find(t => parseInt(t.p_id) == parseInt(p_id)))) {
+		            const newTask = {
+		                p_id: p_id,
+		            };
+		            this.tasks.push(newTask);
+		        	}
+	    }
+	    deleteTask(ev) {
+		    const index = this.tasks.findIndex(t => t.p_id == ev.target.id);
+		    this.tasks.splice(index, 1);
+		}
 
-  class Task extends Component {
-    static template = TASK_TEMPLATE;
-    static props = ["task"];
-    dispatch = useDispatch();
-  }
+		/*function searchFunction() {
+            var input, filter, main, div, div2, i, inputValue;
+            input = document.getElementById("searchdata");
+            filter = input.value.toUpperCase();
+            main = document.getElementById("myData");
+            div = main.getElementsByClassName("cards");
+            for (i = 0; i < div.length; i++) {
+                div2 = div[i].getElementsByTagName("div")[0];
+                if (div2) {
+                    inputValue = div2.textContent || div2.innerText;
+                    if (inputValue.toUpperCase().indexOf(filter) > -1) {
+                        div[i].style.display = "";
+                    } else {
+                        div[i].style.display = "none";
+                    }
+                }
+            }
+        }*/
 
-  // -------------------------------------------------------------------------
-  // App Component
-  // -------------------------------------------------------------------------
-  const APP_TEMPLATE = xml/* xml */ `
-    <div class="todo-app">
-        <input placeholder="Enter a new task" t-on-keyup="addTask" t-ref="add-input"/>
-        <div class="task-list">
-            <Task t-foreach="displayedTasks" t-as="task" t-key="task.id" task="task"/>
-        </div>
-        <div class="task-panel" t-if="tasks.length">
-            <div class="task-counter">
-                <t t-esc="displayedTasks.length"/>
-                <t t-if="displayedTasks.length lt tasks.length">
-                    / <t t-esc="tasks.length"/>
-                </t>
-                task(s)
-            </div>
-            <div>
-                <span t-foreach="['all', 'active', 'completed']"
-                    t-as="f" t-key="f"
-                    t-att-class="{active: filter.value===f}"
-                    t-on-click="setFilter(f)"
-                    t-esc="f"/>
-            </div>
-        </div>
-    </div>`;
 
-  class App extends Component {
-    static template = APP_TEMPLATE;
-    static components = { Task };
+	  tasks = useState([]);
+	  products = [
+	    {
+	      "id": 1,
+	      "product_name": "Bag",
+	      "product_price": 800,
+	    },
+	    {
+	      "id": 2,
+	      "product_name": "phone",
+	      "product_price": 20000,
+	    },
+	    {
+	      "id": 3,
+	      "product_name": "Tablet",
+	      "product_price": 15000,
+	    },
+	    {
+	      "id": 4,
+	      "product_name": "HandsFree",
+	      "product_price": 1000,
+	    },
 
-    inputRef = useRef("add-input");
-    tasks = useStore((state) => state.tasks);
-    filter = useState({ value: "all" });
-    dispatch = useDispatch();
+	  ];
+	}
+	function setup() {
+		const app = new App();
+		 app.mount(document.body);
+	}
 
-    mounted() {
-      this.inputRef.el.focus();
-    }
-
-    addTask(ev) {
-      // 13 is keycode for ENTER
-      if (ev.keyCode === 13) {
-        this.dispatch("addTask", ev.target.value);
-        ev.target.value = "";
-      }
-    }
-
-    get displayedTasks() {
-      switch (this.filter.value) {
-        case "active":
-          return this.tasks.filter((t) => !t.isCompleted);
-        case "completed":
-          return this.tasks.filter((t) => t.isCompleted);
-        case "all":
-          return this.tasks;
-      }
-    }
-    setFilter(filter) {
-      this.filter.value = filter;
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Setup code
-  // -------------------------------------------------------------------------
-  function makeStore() {
-    const localState = window.localStorage.getItem("todoapp");
-    const state = localState ? JSON.parse(localState) : initialState;
-    const store = new Store({ state, actions });
-    store.on("update", null, () => {
-      localStorage.setItem("todoapp", JSON.stringify(store.state));
-    });
-    return store;
-  }
-
-  function setup() {
-    owl.config.mode = "dev";
-    const mountapp = new App();
-    mountapp.mount(document.body);
-  }
-
-  whenReady(setup);
-})(); 
+	whenReady(setup);
