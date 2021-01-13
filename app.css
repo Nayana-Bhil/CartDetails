@@ -1,12 +1,14 @@
 .heading {
-	font-size:60px;
+	font-size:40px;
 	text-align: center;
 	color: purple;
-	width: 700px;
-	background: aliceblue;
-	margin: 50px auto;
-	padding: 10px;
+	width: 1000px;
+	margin: 70px auto;
 }
+.header {
+  background-color: #CBE353;
+}
+
 .task {
   font-size: 18px;
   display: grid;
@@ -22,12 +24,8 @@
 .cartstore {
 	font-size:20px;
 	text-align: left;
-	background-color: lightblue;
 	border-radius: 5px;
 	width: 500px;
 	margin: 50px auto;
 	cursor: pointer;
 }	
-
-
-

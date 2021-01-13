@@ -1290,7 +1290,7 @@
             return "";
         }
         if (typeof str === "number") {
-            return String(str);
+            return string(str);
         }
         const p = document.createElement("p");
         p.textContent = str;
